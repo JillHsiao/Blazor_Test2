@@ -1,0 +1,26 @@
+﻿@page "/"
+@inject IJSRuntime jsRuntime
+
+
+
+
+@code{
+
+
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        Global_Variables.mobile = await jsRuntime.InvokeAsync<bool>("isDevice");
+        if (firstRender)
+        {
+            Global_Variables.mobile = await jsRuntime.InvokeAsync<bool>("isDevice");
+            Global_Variables.isDevice = Global_Variables.mobile ? "Mobile" : "Desktop";
+
+
+           
+        }
+    }
+
+
+
+}

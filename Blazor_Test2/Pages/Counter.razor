@@ -1,0 +1,206 @@
+﻿@page "/counter"
+@inject IJSRuntime jsRuntime
+@using Blazor_Test2.Data
+@inject SQL_data sql_data
+
+<style type="text/css">
+    <!--
+    #B ul li {
+        display: inline;
+    }
+    -->
+    #labelA {
+        font-family: 微軟正黑體;
+        font-size: 16px;
+        width: auto;
+    }
+
+    #inputA {
+        background: #fad7ac;
+        font-family: 微軟正黑體;
+        font-size: 12px;
+        width: 110px;
+    }
+
+    #inputB {
+        background: #fad7ac;
+        font-family: 微軟正黑體;
+        font-size: 12px;
+        width: 110px;
+    }
+
+    #line ul li {
+        display: inline;
+        font-family: 微軟正黑體;
+        font-size: 12px;
+    }
+</style>
+<div>
+    <div id="line">
+        <label id="labelA" for="WH_ID">庫區: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</label>
+        <TelerikDropDownList Id="WH_ID" Data="@WH_ID_List" @bind-Value="WH_ID" Width="110px" />
+        <label id="labelA" for="Loc">儲位:</label>
+        <input type="text" name="Loc" size="10" id="inputA" @bind="@Loc" />
+    </div>
+    <br />
+    <div id="line">
+        <label for="Prod_Type" id="labelA">商品類別:</label>
+        <input type="text" name="Prod_Type" size="3" id="inputA" @bind="@Prod_Type" />
+        <label for="Plt_Qty" id="labelA">數量:</label>
+        <input type="number" name="Plt_Qty" id="inputA" @bind="@Plt_Qty" />
+    </div>
+    <br />
+    <div id="line">
+        <label for="item_no" id="labelA">品項:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</label>
+        <input type="text" name="item_no" size="10" id="inputB" @bind="@item_no" />
+        <label id="labelA" for="Customer_ID">客戶:</label>
+        <input type="text" size="3" name="Customer_ID" id="inputB" @bind="@Customer_ID" />
+    </div>
+    <br />
+    <div id="line">
+
+        <label for="In_Date" id="labelA">進貨日:</label>
+        <TelerikDatePicker @bind-Value="In_Date" @ref="theDatePicker" Width="110px" />
+        <label for="Prod_Date" id="labelA">到期日:</label>
+        <TelerikDatePicker @bind-Value="Prod_Date" @ref="theDatePicker" Width="110px" />
+    </div>
+    <br />
+    <div id="line">
+        <label for="Barcode" id="labelA">條碼:</label>
+        <TelerikAutoComplete Id="Barcode" Data="@Suggestions" ValueChanged="@( (string v) => MyValueChangeHandler(v) )" />
+    </div>
+    <br />
+    <TelerikButton OnClick="@BarcodeBtn">按下去</TelerikButton>
+</div>
+<TelerikGrid Data="@gridView_data" Height="400px"
+             Pageable="true" Sortable="true" Groupable="true"
+             FilterMode="Telerik.Blazor.GridFilterMode.FilterRow"
+             Resizable="true" Reorderable="true">
+    <GridColumns>
+        <GridColumn Field="@(nameof(GridView_data.Id))" Width="120px" Title="NO." />
+        <GridColumn Field="@(nameof(GridView_data.Barcode))" Title="條碼" Groupable="false" />
+        <GridColumn Field="@(nameof(GridView_data.WH_ID))" Title="庫區" />
+        <GridColumn Field="@(nameof(GridView_data.Loc))" Title="儲位" />
+    </GridColumns>
+</TelerikGrid>
+
+@code {
+    protected List<string> WH_ID_List = new List<string>() { "A", "B", "C" };
+    protected string WH_ID { get; set; }
+    string Plt_Qty = "";
+    string Loc = "";
+    string Plt_id = "";
+    string item_no = "";
+    string Customer_ID = "";
+    string Prod_Type = "";
+
+    DateTime In_Date { get; set; } = DateTime.Now;
+    DateTime Prod_Date { get; set; } = DateTime.Now;
+
+    Telerik.Blazor.Components.TelerikDatePicker<DateTime> theDatePicker;
+
+    List<string> Suggestions;
+
+    string result;
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+
+        if (firstRender)
+        {
+
+            string sqlstr = "Select * from Loc_dtl";
+            var data = await sql_data.GetProductAsync(sqlstr);
+            for (int i = 0; i < data.Count; i++)
+            {
+                Suggestions = new List<string> {
+            data[i][4]
+
+            };
+            }
+        }
+
+    }
+    private void MyValueChangeHandler(string theUserChoice)
+    {
+
+        result = theUserChoice;
+    }
+
+    private async Task BarcodeBtn()
+    {
+
+        string insert_information = "";
+        int count = 1;
+        insert_information = string.Format("insert into  Loc_dtl " +
+                                     "(Loc_Txno, WH_ID, Loc, In_Date,Plt_Qty, Customer_Id, Item_No," +
+                                     "Prod_Date, Prod_Type,Created_by,Created_Date,Updated_Date,Updated_by,barcode) " +
+                                     "values ('{0}', '{1}', '{2}', '{3}', '{4}', '{5}', '{6}', '{7}', '{8}','{9}','{10}', '{11}', '{12}', '{13}');",
+                                     result,
+                                     WH_ID,
+                                     Loc,
+                                     In_Date.ToString("yyyy-MM-dd HH:mm:ss"),
+                                     Plt_Qty,
+                                     Customer_ID,
+                                     item_no,
+                                     Prod_Date.ToString("yyyy-MM-dd HH:mm:ss"),
+                                     Prod_Type,
+                                     "Jill",
+                                     DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
+                                     DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
+                                     "Jill",
+                                     result
+                                     );
+
+        if (!sql_data.isOpen())
+        {
+            sql_data.openDB(Global_Variables.SQL_CONFIG);
+        }
+        try
+        {
+            sql_data.commitCtrl(SQL_data.COMMIT.BEGIN);
+            if (sql_data.execSql_count(insert_information) == count)//傳回受影響的資料列數目=影響數量
+            {
+                sql_data.commitCtrl(SQL_data.COMMIT.COMMIT);//認可資料庫交易
+            }
+            else
+            {
+                sql_data.commitCtrl(SQL_data.COMMIT.ROLLBACK);
+
+            }
+
+        }
+        catch (Exception a)
+        {
+            sql_data.commitCtrl(SQL_data.COMMIT.ROLLBACK);
+
+
+        }
+        sql_data.closeDB();
+
+
+        string sqlstr = "Select * from Loc_dtl";
+        var data = await sql_data.GetProductAsync(sqlstr);
+        gridView_data = Enumerable.Range(1, data.Count).Select(x => new GridView_data()
+        {
+            Id = x,
+            WH_ID = data[(x - 1)][0].ToString(),
+            Loc = data[(x - 1)][1].ToString(),
+            Barcode = data[(x - 1)][12].ToString()
+        }).ToList();
+
+    }
+
+
+
+
+    public class GridView_data
+    {
+        public int? Id { get; set; }
+        public string WH_ID { get; set; }
+        public string Loc { get; set; }
+        public string Barcode { get; set; }
+    }
+
+
+    public List<GridView_data> gridView_data { get; set; }
+}
